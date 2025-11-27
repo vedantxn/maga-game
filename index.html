@@ -1,456 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Flappy Trump — Meme Game (Win Overlay Refinement)</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
-  body{overflow:hidden;background:#8fd1ff}
-  .background{
-    height:100vh;width:100vw;
-    background:url('maga-background.png') no-repeat center center fixed;
-    background-size:cover;
-  }
-  .bird{
-    height:100px;width:100px;
-    position:fixed;top:40vh;left:30vw;
-    z-index:100;
-  }
-  .pipe_sprite{
-    position:fixed;left:100vw;
-    width:9vw;
-    background:radial-gradient(circle at 50% 30%, #a8e07a 40%, #2ea849 100%);
-    border:4px solid #0a3b09;
-    box-shadow:0 6px 12px rgba(0,0,0,0.25);
-    z-index:50;
-  }
-  .pipe_top{top:0;border-bottom-left-radius:12px;border-bottom-right-radius:12px;}
-  .pipe_bottom{bottom:0;border-top-left-radius:12px;border-top-right-radius:12px;}
-  .message{
-    position:absolute;z-index:10;color:black;
-    top:30%;left:50%;font-size:3.6em;
-    transform:translate(-50%,-50%);
-    text-align:center;
-  }
-  .messageStyle{
-    background:rgba(255,255,255,0.95);padding:24px;border-radius:12px;
-    box-shadow:rgba(0,0,0,.24) 0 3px 12px;
-  }
-  .score{
-    position:fixed;z-index:10;height:10vh;
-    font-size:8vh;font-weight:700;color:white;
-    -webkit-text-stroke:2px black;top:0;left:0;margin:10px;padding:6px;
-    display:flex;align-items:center;gap:8px;
-  }
-  .score_val{color:gold;font-weight:bold}
-
-  #start-overlay {
-    display:none; position:fixed;z-index:200;background:rgba(0,0,0,0.85);
-    top:0;left:0;width:100vw;height:100vh;
-    flex-direction:column;justify-content:center;align-items:center;
-  }
-
-  #win-overlay {
-    display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;
-    background:rgba(0,0,0,0.85);flex-direction:column;justify-content:center;align-items:center;
-  }
-
-  #win-message {
-    font-size:2.7em;color:#FFD700;text-align:center;margin-bottom:32px;
-    text-shadow:2px 2px rgba(0,0,0,0.8);
-  }
-
-
-  #winning-gifs {
-    display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3vw;margin-bottom:12px;
-    width:100%;max-width:1100px;
-  }
-  #win-overlay img {
-    display:block;margin:auto;
-    max-width:20vw;max-height:240px;width:auto;height:auto;
-    border-radius:12px;
-    box-shadow:2px 4px 32px rgba(0,0,0,0.22);
-    background:rgba(255,255,255,0.15);
-  }
-
-  #lose-overlay {
-    display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;
-    background:rgba(0,0,0,0.85);flex-direction:column;justify-content:center;align-items:center;
-  }
-
-  #losing-gifs {
-    display:flex;gap:5vw;justify-content:center;align-items:center;margin-bottom:32px;
-    width:100%;
-  }
-  #losing-gifs img {
-    width:22vw;max-width:280px;min-width:140px;height:auto;
-    border-radius:12px;
-    box-shadow:2px 4px 32px rgba(0,0,0,0.35);
-    background:rgba(20,20,20,0.13);
-  }
-  #lose-text {
-    font-size:2.2em;color:white;text-align:center;margin-top:24px;
-    text-shadow:2px 2px rgba(0,0,0,0.8);
-  }
-  #difficulty-choose {
-    display:flex; gap:32px; margin-top:32px; justify-content:center;
-  }
-  #easy-btn, #hard-btn {
-    padding:20px 32px; font-size:1.4em; border-radius:12px; border:none; outline:none;
-    display:flex;flex-direction:column;align-items:center; cursor:pointer;
-  }
-  #easy-btn { background:#28c76f; color:white;}
-  #hard-btn { background:#e74c3c; color:white;}
-  @media(max-width:1080px){
-    .message{font-size:42px;top:50%;white-space:nowrap}
-    .score{font-size:6.5vh}
-    .bird{width:120px;height:90px}
-    .pipe_sprite{width:13.5vw}
-    #start-gif {width:220px;}
-    #win-overlay img {max-width:35vw !important;}
-    #losing-gifs img {width:40vw;}
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flappy Trump — Meme Game (Win Overlay Refinement)</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<div class="background"></div>
-<img src="trump.gif" class="bird" id="bird-1" />
-<div class="message messageStyle" id="message">Press Enter To Start<p style="font-size:0.45em;margin-top:12px"><span style="color:red">↑</span> or Space to flap</p></div>
-<div class="score"><span class="score_title"></span><span class="score_val"></span></div>
-
-<!-- Start overlay for meme intro -->
-<div id="start-overlay">
-  <img id="start-gif" src="images/tired_of_winning.gif" style="width:400px;max-width:90vw;margin-bottom:24px;">
-  <audio id="start-audio" src="sounds/tired_of_winning.mp3"></audio>
-  <div id="start-timer" style="color:white; font-size:2.5em; margin-top:16px;">5</div>
-  <div id="difficulty-choose">
-    <button id="easy-btn">
-      <img src="images/rep-wojak.png" alt="Easy" style="width:70px; margin-bottom:12px;">
-      Easy (Texas)
-      <span id="easy-tick" style="display:none; color:#fff; font-size:2em; margin-top:2px;">✔️</span>
-    </button>
-    <button id="hard-btn">
-      <img src="images/de-wojak.png" alt="Hard" style="width:70px; margin-bottom:12px;">
-      Hard (California)
-      <span id="hard-tick" style="display:none; color:#fff; font-size:2em; margin-top:2px;">✔️</span>
-    </button>
+  <div class="background"></div>
+  <img src="trump.gif" class="bird" id="bird-1" />
+  <div class="message messageStyle" id="message">Press Enter To Start<p style="font-size:0.45em;margin-top:12px"><span
+        style="color:red">↑</span> or Space to flap</p>
   </div>
-</div>
+  <div class="score"><span class="score_title"></span><span class="score_val"></span></div>
 
-<!-- Win overlay for celebration -->
-<div id="win-overlay">
-  <div id="win-message">
-    You have made President Trump proud, and he loves you!
+  <!-- Start overlay for meme intro -->
+  <div id="start-overlay">
+    <img id="start-gif" src="images/tired_of_winning.gif" style="width:400px;max-width:90vw;margin-bottom:24px;">
+    <audio id="start-audio" src="sounds/tired_of_winning.mp3"></audio>
+    <div id="start-timer" style="color:white; font-size:2.5em; margin-top:16px;">5</div>
+    <div id="difficulty-choose">
+      <button id="easy-btn">
+        <img src="images/rep-wojak.png" alt="Easy" style="width:70px; margin-bottom:12px;">
+        Easy (Texas)
+        <span id="easy-tick" style="display:none; color:#fff; font-size:2em; margin-top:2px;">✔️</span>
+      </button>
+      <button id="hard-btn">
+        <img src="images/de-wojak.png" alt="Hard" style="width:70px; margin-bottom:12px;">
+        Hard (California)
+        <span id="hard-tick" style="display:none; color:#fff; font-size:2em; margin-top:2px;">✔️</span>
+      </button>
+    </div>
   </div>
-  <div id="winning-gifs">
-    <img src="images/winning-dance-1.gif" alt="Winning Dance 1">
-    <img src="images/winning-dance-2.gif" alt="Winning Dance 2">
-    <img src="images/eagle.gif" alt="Eagle">
-    <img src="images/merica.gif" alt="Merica">
-    <img src="images/penguin-america.gif" alt="Penguin America">
-    <img src="images/penguin-2.gif" alt="Penguin 2">
-    <img src="images/trump-flex.gif" alt="Trump Flex">
-    <img src="images/trump-w-flag.gif" alt="Trump with Flag">
+
+  <!-- Win overlay for celebration -->
+  <div id="win-overlay">
+    <div id="win-message">
+      You have made President Trump proud, and he loves you!
+    </div>
+    <div id="winning-gifs">
+      <img src="images/winning-dance-1.gif" alt="Winning Dance 1">
+      <img src="images/winning-dance-2.gif" alt="Winning Dance 2">
+      <img src="images/eagle.gif" alt="Eagle">
+      <img src="images/merica.gif" alt="Merica">
+      <img src="images/penguin-america.gif" alt="Penguin America">
+      <img src="images/penguin-2.gif" alt="Penguin 2">
+      <img src="images/trump-flex.gif" alt="Trump Flex">
+      <img src="images/trump-w-flag.gif" alt="Trump with Flag">
+    </div>
+    <audio id="win-audio" src="sounds/on-the-floor.mp3"></audio>
   </div>
-  <audio id="win-audio" src="sounds/on-the-floor.mp3"></audio>
-</div>
 
-<!-- Lose overlay: Biden laugh + Sassy Trump side by side -->
-<div id="lose-overlay">
-  <div id="losing-gifs">
-    <img src="images/biden-laugh.gif" alt="Biden Laugh">
-    <img src="images/sassy-trump.gif" alt="Sassy Trump">
+  <!-- Lose overlay: Biden laugh + Sassy Trump side by side -->
+  <div id="lose-overlay">
+    <div id="losing-gifs">
+      <img src="images/biden-laugh.gif" alt="Biden Laugh">
+      <img src="images/sassy-trump.gif" alt="Sassy Trump">
+    </div>
+    <div id="lose-text">Press <strong>Enter</strong> to try again</div>
+    <audio id="lose-audio" src="sounds/losing.mp3"></audio>
   </div>
-  <div id="lose-text">Press <strong>Enter</strong> to try again</div>
-  <audio id="lose-audio" src="sounds/losing.mp3"></audio>
-</div>
 
-<!-- YMCA music for during play -->
-<audio id="game-audio" src="sounds/ymca.mp3" loop></audio>
+  <!-- YMCA music for during play -->
+  <audio id="game-audio" src="sounds/ymca.mp3" loop></audio>
 
-<script>
-window.PIPE_GAP_VH = 47;
-const MOVE_SPEED = 2.2;
-const SPAWN_INTERVAL_MS = 3000;
-const PIPE_LIMIT = 10;
-const MIN_TOP_H_VH = 10;
-const MAX_TOP_H_VH = 60;
-let grativy = 0.5;
-let bird = document.querySelector('.bird');
-let img = document.getElementById('bird-1');
-let score_val = document.querySelector('.score_val');
-let message = document.getElementById('message');
-let score_title = document.querySelector('.score_title');
-let backgroundRect = { top: 0, bottom: window.innerHeight };
-let pipes = [];
-let spawnIntervalId = null;
-let score = 0;
-let gameState = 'Start';
-img.style.display = 'none';
-score_title.innerHTML = '';
-score_val.innerHTML = '';
-window._spawnCount = 0;
-let winOverlay = document.getElementById('win-overlay');
-let loseOverlay = document.getElementById('lose-overlay');
-let winAudio = document.getElementById('win-audio');
-let loseAudio = document.getElementById('lose-audio');
-let gameAudio = document.getElementById('game-audio');
-let startOverlay = document.getElementById('start-overlay');
-let startAudio = document.getElementById('start-audio');
-let startTimerDiv = document.getElementById('start-timer');
-let difficultyChoose = document.getElementById('difficulty-choose');
-let easyBtn = document.getElementById('easy-btn');
-let hardBtn = document.getElementById('hard-btn');
-let easyTick = document.getElementById('easy-tick');
-let hardTick = document.getElementById('hard-tick');
-let selectedDifficulty = 'easy';
-
-/* Event handling for Enter key */
-document.addEventListener('keydown', function(e){
-  if(gameState === 'WinEnd'){
-    if(e.key === 'Enter'){
-      winAudio.pause();
-      winAudio.currentTime = 0;
-      winOverlay.style.display = 'none';
-      gameState = 'Start';
-      showStartMemeThenBegin();
-    }
-    return;
-  }
-  if(gameState === 'LoseEnd'){
-    if(e.key === 'Enter'){
-      loseAudio.pause();
-      loseAudio.currentTime = 0;
-      loseOverlay.style.display = 'none';
-      gameState = 'Start';
-      showStartMemeThenBegin();
-    }
-    return;
-  }
-  if ((e.key === 'Enter')) {
-    if (gameState === 'Start' || gameState === 'End') {
-      showStartMemeThenBegin();
-    }
-  }
-  if (e.key === ' ') {
-    e.preventDefault();
-  }
-});
-
-/* Starting meme screen and difficulty select */
-function showStartMemeThenBegin(){
-  startOverlay.style.display = 'flex';
-  startAudio.currentTime = 0;
-  startAudio.play();
-  difficultyChoose.style.display = 'flex';
-  easyTick.style.display = 'none';
-  hardTick.style.display = 'none';
-  selectedDifficulty = 'easy';
-  window.PIPE_GAP_VH = 47;
-
-  easyBtn.onclick = () => {
-    selectedDifficulty = 'easy';
-    easyTick.style.display = 'inline';
-    hardTick.style.display = 'none';
-    window.PIPE_GAP_VH = 47;
-  };
-  hardBtn.onclick = () => {
-    selectedDifficulty = 'hard';
-    hardTick.style.display = 'inline';
-    easyTick.style.display = 'none';
-    window.PIPE_GAP_VH = 30;
-  };
-
-  let countdown = 5;
-  startTimerDiv.textContent = countdown;
-  let overlayTimer = setInterval(() => {
-    countdown--;
-    startTimerDiv.textContent = countdown;
-    if (countdown === 0) {
-      clearInterval(overlayTimer);
-    }
-  }, 1000);
-
-  setTimeout(() => {
-    startAudio.pause();
-    startAudio.currentTime = 0;
-    startOverlay.style.display = 'none';
-    difficultyChoose.style.display = 'none';
-    startGame();
-  }, 5000);
-}
-
-function startGame(){
-  removeAllPipes();
-  img.style.display = 'block';
-  bird.style.top = '40vh';
-  score = 0;
-  score_title.innerHTML = 'Score: ';
-  score_val.innerHTML = '0/10';
-  message.innerHTML = '';
-  message.classList.remove('messageStyle');
-  gameState = 'Play';
-  backgroundRect = { top: 0, bottom: window.innerHeight };
-  window._spawnCount = 0;
-  winOverlay.style.display = 'none';
-  loseOverlay.style.display = 'none';
-  winAudio.pause();
-  winAudio.currentTime = 0;
-  loseAudio.pause();
-  loseAudio.currentTime = 0;
-  gameAudio.currentTime = 0;
-  gameAudio.play();
-
-  spawnPipe();
-  if (spawnIntervalId) clearInterval(spawnIntervalId);
-  spawnIntervalId = setInterval(() => {
-    if (gameState === 'Play' && score < PIPE_LIMIT) spawnPipe();
-  }, SPAWN_INTERVAL_MS);
-
-  requestAnimationFrame(pipeMoveLoop);
-  startBird();
-}
-
-function removeAllPipes(){ pipes.forEach(p => { p.topEl.remove(); p.bottomEl.remove(); }); pipes = []; }
-
-/* Pipe Generation: weighted, gap controlled by difficulty */
-function spawnPipe(){
-  if (gameState !== 'Play' || score >= PIPE_LIMIT) return;
-  if (window._spawnCount >= PIPE_LIMIT) return;
-  window._spawnCount++;
-  let baseMin = 14, baseMax = 46, hardChance = 0.18, gap = window.PIPE_GAP_VH;
-  let variation = Math.random();
-  let topH;
-  if (variation > hardChance) {
-    topH = Math.floor(Math.random() * (baseMax - baseMin + 1)) + baseMin;
-  } else {
-    topH = (Math.random() < 0.5)
-      ? Math.floor(Math.random() * 13) + MIN_TOP_H_VH
-      : Math.floor(Math.random() * 13) + (MAX_TOP_H_VH - 13);
-  }
-  topH = Math.max(MIN_TOP_H_VH, Math.min(MAX_TOP_H_VH, topH));
-  const topPipe = document.createElement('div');
-  topPipe.className = 'pipe_sprite pipe_top';
-  topPipe.style.height = topH + 'vh';
-  topPipe.style.left = '100vw';
-  topPipe.dataset.pairId = window._spawnCount;
-  const bottomTop = topH + gap;
-  const bottomHeight = Math.max(6, 100 - bottomTop);
-  const bottomPipe = document.createElement('div');
-  bottomPipe.className = 'pipe_sprite pipe_bottom';
-  bottomPipe.style.height = bottomHeight + 'vh';
-  bottomPipe.style.left = '100vw';
-  bottomPipe.dataset.pairId = window._spawnCount;
-  bottomPipe.dataset.increaseScore = '1';
-  document.body.appendChild(topPipe);
-  document.body.appendChild(bottomPipe);
-  pipes.push({ topEl: topPipe, bottomEl: bottomPipe, pairId: window._spawnCount, passed:false });
-}
-
-function pipeMoveLoop() {
-  if (gameState !== 'Play') return;
-  let birdProps = bird.getBoundingClientRect();
-  for (let i = pipes.length - 1; i >= 0; i--) {
-    const pair = pipes[i];
-    const topEl = pair.topEl;
-    const bottomEl = pair.bottomEl;
-    const topRect = topEl.getBoundingClientRect();
-    const bottomRect = bottomEl.getBoundingClientRect();
-    const newLeftTop = topRect.left - MOVE_SPEED;
-    topEl.style.left = newLeftTop + 'px';
-    bottomEl.style.left = newLeftTop + 'px';
-    if (newLeftTop + topRect.width < -50) {
-      topEl.remove();
-      bottomEl.remove();
-      pipes.splice(i, 1);
-      continue;
-    }
-    if (rectsOverlap(birdProps, topRect) || rectsOverlap(birdProps, bottomRect)) {
-      endGame(false);
-      return;
-    }
-    if (!pair.passed) {
-      const pairRight = bottomRect.left + bottomRect.width;
-      if (pairRight < birdProps.left) {
-        pair.passed = true;
-        score += 1;
-        score_val.innerHTML = score + '/10';
-        if (score === PIPE_LIMIT) {
-          // WIN: after crossing 10th pipe, finish after 1 second
-          setTimeout(triggerWinOverlay, 1000);
-        }
-      }
-    }
-  }
-  requestAnimationFrame(pipeMoveLoop);
-}
-
-function startBird() {
-  let bird_dy = 0;
-  document.onkeydown = function(e){
-    if (gameState !== 'Play') return;
-    if (e.key == 'ArrowUp' || e.key == ' ') {
-      bird_dy = -7.6;
-    }
-  };
-  function applyGravity(){
-    if (gameState !== 'Play') return;
-    bird_dy = bird_dy + grativy;
-    let newTop = bird.offsetTop + bird_dy;
-    if (newTop <= 0) {
-      newTop = 0;
-      bird_dy = 0;
-    }
-    if (newTop + bird.offsetHeight >= backgroundRect.bottom) {
-      endGame(false);
-      return;
-    }
-    bird.style.top = newTop + 'px';
-    requestAnimationFrame(applyGravity);
-  }
-  requestAnimationFrame(applyGravity);
-}
-
-function rectsOverlap(r1, r2){
-  return !(r2.left > r1.right ||
-           r2.right < r1.left ||
-           r2.top > r1.bottom ||
-           r2.bottom < r1.top);
-}
-
-function triggerWinOverlay(){
-  gameState = 'WinEnd';
-  bird.style.display = 'none';
-  pipes.forEach(p => { p.topEl.remove(); p.bottomEl.remove(); });
-  winOverlay.style.display = 'flex';
-  gameAudio.pause();
-  gameAudio.currentTime = 0;
-  winAudio.currentTime = 0;
-  winAudio.play();
-}
-
-function endGame(won){
-  gameState = won ? 'End' : 'LoseEnd';
-  if (spawnIntervalId) clearInterval(spawnIntervalId);
-  img.style.display = 'none';
-  gameAudio.pause();
-  gameAudio.currentTime = 0;
-  
-  if(won){
-    message.classList.add('messageStyle');
-    message.innerHTML = 'Congratulations! You cleared all pipes!<br>Press Enter to play again';
-  } else {
-    loseOverlay.style.display = 'flex';
-    loseAudio.currentTime = 0;
-    loseAudio.play();
-  }
-  window._spawnCount = 0;
-}
-
-window.addEventListener('resize', ()=>{
-  backgroundRect = { top:0, bottom: window.innerHeight };
-});
-</script>
+  <script src="script.js"></script>
 </body>
+
 </html>
