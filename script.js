@@ -4,7 +4,7 @@ const SPAWN_INTERVAL_MS = 3000;
 const PIPE_LIMIT = 10;
 const MIN_TOP_H_VH = 10;
 const MAX_TOP_H_VH = 60;
-let grativy = 0.5;
+let gravity = 0.5;
 let bird = document.querySelector('.bird');
 let img = document.getElementById('bird-1');
 let score_val = document.querySelector('.score_val');
@@ -34,7 +34,60 @@ let easyTick = document.getElementById('easy-tick');
 let hardTick = document.getElementById('hard-tick');
 let selectedDifficulty = 'easy';
 
-/* Event handling for Enter key */
+const stickerData = [
+    { file: 'biden.gif', w: 340, h: 498 },
+    { file: 'biden-sun.gif', w: 487, h: 490 },
+    { file: 'china.webp', w: 250, h: 167 },
+    { file: 'china-winning.gif', w: 228, h: 498 },
+    { file: 'cnn.gif', w: 457, h: 213 },
+    { file: 'epstein.gif', w: 332, h: 498 },
+    { file: 'gay-2.gif', w: 281, h: 498 },
+    { file: 'gay-nyc.gif', w: 498, h: 498 },
+    { file: 'greta.gif', w: 300, h: 300 },
+    { file: 'mamdani.gif', w: 331, h: 498 },
+    { file: 'kim-jong-un.gif', w: 360, h: 450 },
+    { file: 'hero-zelensky.gif', w: 348, h: 498 },
+    { file: 'taylor.gif', w: 233, h: 341 },
+    { file: 'flag-g.gif', w: 480, h: 480 },
+    { file: 'kamala.gif', w: 332, h: 498 },
+];
+
+let stickerBag = [];
+
+function getNextSticker() {
+    if (stickerBag.length === 0) {
+        stickerBag = [...stickerData];
+        for (let i = stickerBag.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [stickerBag[i], stickerBag[j]] = [stickerBag[j], stickerBag[i]];
+        }
+    }
+    return stickerBag.pop();
+}
+
+function addStickerToPipe(pipeEl, heightVH, isTopPipe) {
+    if (heightVH < 15) return;
+
+    const sticker = getNextSticker();
+    const img = document.createElement('img');
+    img.src = './images/' + sticker.file;
+    img.style.position = 'absolute';
+    img.style.left = '50%';
+    img.style.transform = 'translateX(-50%)';
+    img.style.maxWidth = '90%';
+    img.style.maxHeight = '90%';
+    img.style.objectFit = 'contain';
+    img.style.zIndex = '10';
+
+    if (isTopPipe) {
+        img.style.bottom = '2vh';
+    } else {
+        img.style.top = '2vh';
+    }
+
+    pipeEl.appendChild(img);
+}
+
 document.addEventListener('keydown', function (e) {
     if (gameState === 'WinEnd') {
         if (e.key === 'Enter') {
@@ -66,7 +119,6 @@ document.addEventListener('keydown', function (e) {
     }
 });
 
-/* Starting meme screen and difficulty select */
 function showStartMemeThenBegin() {
     startOverlay.style.display = 'flex';
     startAudio.currentTime = 0;
@@ -140,16 +192,21 @@ function startGame() {
     startBird();
 }
 
-function removeAllPipes() { pipes.forEach(p => { p.topEl.remove(); p.bottomEl.remove(); }); pipes = []; }
+function removeAllPipes() {
+    pipes.forEach(p => {
+        p.topEl.remove(); p.bottomEl.remove();
+    }); pipes = [];
+}
 
-/* Pipe Generation: weighted, gap controlled by difficulty */
 function spawnPipe() {
     if (gameState !== 'Play' || score >= PIPE_LIMIT) return;
     if (window._spawnCount >= PIPE_LIMIT) return;
     window._spawnCount++;
+
     let baseMin = 14, baseMax = 46, hardChance = 0.18, gap = window.PIPE_GAP_VH;
     let variation = Math.random();
     let topH;
+
     if (variation > hardChance) {
         topH = Math.floor(Math.random() * (baseMax - baseMin + 1)) + baseMin;
     } else {
@@ -158,19 +215,35 @@ function spawnPipe() {
             : Math.floor(Math.random() * 13) + (MAX_TOP_H_VH - 13);
     }
     topH = Math.max(MIN_TOP_H_VH, Math.min(MAX_TOP_H_VH, topH));
+
+    // --- TOP PIPE CREATION ---
     const topPipe = document.createElement('div');
     topPipe.className = 'pipe_sprite pipe_top';
     topPipe.style.height = topH + 'vh';
     topPipe.style.left = '100vw';
+    topPipe.style.overflow = 'hidden'; // Keeps image inside
+    topPipe.style.position = 'absolute'; // Ensure internal absolute positioning works
     topPipe.dataset.pairId = window._spawnCount;
+
+    // Add Sticker to Top Pipe
+    addStickerToPipe(topPipe, topH, true);
+
     const bottomTop = topH + gap;
     const bottomHeight = Math.max(6, 100 - bottomTop);
+
+    // --- BOTTOM PIPE CREATION ---
     const bottomPipe = document.createElement('div');
     bottomPipe.className = 'pipe_sprite pipe_bottom';
     bottomPipe.style.height = bottomHeight + 'vh';
     bottomPipe.style.left = '100vw';
+    bottomPipe.style.overflow = 'hidden'; // Keeps image inside
+    bottomPipe.style.position = 'absolute'; // Ensure internal absolute positioning works
     bottomPipe.dataset.pairId = window._spawnCount;
     bottomPipe.dataset.increaseScore = '1';
+
+    // Add Sticker to Bottom Pipe
+    addStickerToPipe(bottomPipe, bottomHeight, false);
+
     document.body.appendChild(topPipe);
     document.body.appendChild(bottomPipe);
     pipes.push({ topEl: topPipe, bottomEl: bottomPipe, pairId: window._spawnCount, passed: false });
@@ -204,8 +277,8 @@ function pipeMoveLoop() {
                 pair.passed = true;
                 score += 1;
                 score_val.innerHTML = score + '/10';
+                // WIN: after crossing 10th pipe-- finish after 1 second
                 if (score === PIPE_LIMIT) {
-                    // WIN: after crossing 10th pipe, finish after 1 second
                     setTimeout(triggerWinOverlay, 1000);
                 }
             }
@@ -224,7 +297,7 @@ function startBird() {
     };
     function applyGravity() {
         if (gameState !== 'Play') return;
-        bird_dy = bird_dy + grativy;
+        bird_dy = bird_dy + gravity;
         let newTop = bird.offsetTop + bird_dy;
         if (newTop <= 0) {
             newTop = 0;
@@ -279,3 +352,4 @@ function endGame(won) {
 window.addEventListener('resize', () => {
     backgroundRect = { top: 0, bottom: window.innerHeight };
 });
+
